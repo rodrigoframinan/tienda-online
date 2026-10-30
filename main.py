@@ -1,5 +1,5 @@
 from models.Producto import ProductoElectronico, ProductoRopa
-from Services.Tienda_service import TiendaService
+from services.Tienda_service import TiendaService
 
 
 def main():
