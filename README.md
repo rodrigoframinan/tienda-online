@@ -39,3 +39,10 @@ python3 main.py
 
 - `main`: rama principal y estable.
 - `feature/<nombre>`: una rama por funcionalidad, que se integra en `main` mediante Pull Request.
+
+## Ejecución con Docker
+
+```bash
+docker build -t tienda-online .
+docker run --rm tienda-online
+```
