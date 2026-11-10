@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tienda online</title>
+<style>
+  :root {
+    --fondo: #f5f6f8; --tarjeta: #fff; --texto: #1d2330; --suave: #667085;
+    --borde: #dde1e7; --acento: #2457d6; --ok: #127a3a; --error: #b42318;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+         background: var(--fondo); color: var(--texto); font-size: 15px; }
+  header { background: var(--tarjeta); border-bottom: 1px solid var(--borde);
+           padding: 14px 20px; display: flex; flex-wrap: wrap; gap: 12px;
+           align-items: center; justify-content: space-between; }
+  header h1 { margin: 0; font-size: 20px; }
+  .conexion { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .conexion input { width: 240px; }
+  #estado { font-size: 13px; color: var(--suave); }
+  main { max-width: 1100px; margin: 0 auto; padding: 20px 16px;
+         display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr)); }
+  section { background: var(--tarjeta); border: 1px solid var(--borde);
+            border-radius: 10px; padding: 16px; }
+  section.ancho { grid-column: 1 / -1; }
+  h2 { margin: 0 0 12px; font-size: 17px; }
+  h3 { margin: 16px 0 8px; font-size: 14px; color: var(--suave); text-transform: uppercase;
+       letter-spacing: .04em; }
+  label { display: block; font-size: 13px; color: var(--suave); margin: 8px 0 3px; }
+  input, select, button { font: inherit; padding: 7px 9px; border-radius: 6px;
+                          border: 1px solid var(--borde); background: #fff; color: var(--texto); }
+  input, select { width: 100%; }
+  button { background: var(--acento); color: #fff; border-color: var(--acento);
+           cursor: pointer; margin-top: 10px; }
+  button.secundario { background: #fff; color: var(--acento); }
+  button.peligro { background: #fff; color: var(--error); border-color: #f1c0bb;
+                   margin: 0; padding: 3px 8px; font-size: 13px; }
+  .fila { display: flex; gap: 8px; }
+  .fila > * { flex: 1; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--borde); }
+  th { color: var(--suave); font-weight: 600; font-size: 13px; }
+  .tabla { overflow-x: auto; }
+  .mensaje { margin-top: 10px; font-size: 14px; min-height: 1em; }
+  .mensaje.ok { color: var(--ok); } .mensaje.error { color: var(--error); }
+  .pedido { border: 1px solid var(--borde); border-radius: 8px; padding: 10px; margin-top: 10px; }
+  .pedido strong { display: block; margin-bottom: 4px; }
+  .vacio { color: var(--suave); font-size: 14px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Tienda online</h1>
+  <div class="conexion">
+    <!-- Dirección de la API: se puede cambiar para usar la IP de otro equipo -->
+    <input id="baseUrl" value="http://localhost:8000" aria-label="Dirección de la API">
+    <button class="secundario" style="margin:0" onclick="conectar()">Conectar</button>
+    <span id="estado"></span>
+  </div>
+</header>
+
+<main>
+  <!-- ======================= PRODUCTOS ======================= -->
+  <section class="ancho">
+    <h2>Productos</h2>
+    <div class="tabla">
+      <table>
+        <thead><tr><th>Nombre</th><th>Tipo</th><th>Precio</th><th>Stock</th><th>Detalles</th><th></th></tr></thead>
+        <tbody id="tablaProductos"></tbody>
+      </table>
+    </div>
+
+    <h3>Nuevo producto</h3>
+    <form id="formProducto">
+      <div class="fila">
+        <div><label>Tipo</label>
+          <select id="pTipo" onchange="mostrarCamposTipo()">
+            <option value="generico">Genérico</option>
+            <option value="electronico">Electrónico</option>
+            <option value="ropa">Ropa</option>
+          </select></div>
+        <div><label>Nombre</label><input id="pNombre" required></div>
+      </div>
+      <div class="fila">
+        <div><label>Precio (€)</label><input id="pPrecio" type="number" step="0.01" min="0" required></div>
+        <div><label>Stock</label><input id="pStock" type="number" min="0" required></div>
+      </div>
+      <div class="fila" id="camposElectronico" hidden>
+        <div><label>Meses de garantía</label><input id="pGarantia" type="number" min="0"></div>
+      </div>
+      <div class="fila" id="camposRopa" hidden>
+        <div><label>Talla</label><input id="pTalla"></div>
+        <div><label>Color</label><input id="pColor"></div>
+      </div>
+      <button type="submit">Crear producto</button>
+      <div class="mensaje" id="msgProducto"></div>
+    </form>
+  </section>
+
+  <!-- ======================= USUARIOS ======================= -->
+  <section>
+    <h2>Usuarios</h2>
+    <div class="tabla">
+      <table>
+        <thead><tr><th>Nombre</th><th>Email</th><th>Admin</th></tr></thead>
+        <tbody id="tablaUsuarios"></tbody>
+      </table>
+    </div>
+
+    <h3>Nuevo usuario</h3>
+    <form id="formUsuario">
+      <div class="fila">
+        <div><label>Nombre</label><input id="uNombre" required></div>
+        <div><label>Tipo</label>
+          <select id="uTipo"><option value="cliente">Cliente</option><option value="administrador">Administrador</option></select></div>
+      </div>
+      <label>Email</label><input id="uEmail" type="email" required>
+      <label>Dirección postal</label><input id="uDireccion">
+      <button type="submit">Crear usuario</button>
+      <div class="mensaje" id="msgUsuario"></div>
+    </form>
+  </section>
+
+  <!-- ======================= PEDIDOS ======================= -->
+  <section>
+    <h2>Nuevo pedido</h2>
+    <form id="formPedido">
+      <label>Cliente</label>
+      <select id="pedCliente" required></select>
+      <div id="lineasPedido"></div>
+      <button type="button" class="secundario" onclick="anadirLinea()">+ Añadir producto</button>
+      <button type="submit">Crear pedido</button>
+      <div class="mensaje" id="msgPedido"></div>
+    </form>
+
+    <h3>Pedidos de un usuario</h3>
+    <div class="fila">
+      <select id="consultaCliente"></select>
+      <button style="margin:0;flex:0 0 auto" onclick="verPedidos()">Ver pedidos</button>
+    </div>
+    <div id="listaPedidos"></div>
+  </section>
+</main>
+
+<script>
+// ===========================================================================
+// 1. FUNCIÓN QUE HACE TODAS LAS PETICIONES A LA API
+//    Todas las llamadas pasan por aquí: usa fetch(), comprueba el código HTTP
+//    y devuelve el JSON. Si la API responde con error, lanza una excepción con
+//    el mensaje "detail" que envía FastAPI.
+// ===========================================================================
+function baseUrl() {
+  return document.getElementById("baseUrl").value.replace(/\/+$/, "");
+}
+
+async function api(metodo, ruta, cuerpo) {
+  const opciones = { method: metodo, headers: {} };
+  if (cuerpo !== undefined) {
+    opciones.headers["Content-Type"] = "application/json";
+    opciones.body = JSON.stringify(cuerpo);
+  }
+  const respuesta = await fetch(baseUrl() + ruta, opciones);
+  const datos = await respuesta.json();
+  if (!respuesta.ok) {
+    throw new Error(`${respuesta.status}: ${textoError(datos.detail)}`);
+  }
+  return datos;
+}
+
+// FastAPI devuelve "detail" como texto (errores propios) o como lista (422, validación)
+function textoError(detail) {
+  if (Array.isArray(detail)) return detail.map(d => d.msg.replace(/^Value error, /, "")).join("; ");
+  return detail;
+}
+
+function mensaje(id, texto, tipo) {
+  const el = document.getElementById(id);
+  el.textContent = texto;
+  el.className = "mensaje " + tipo;
+}
+
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+let productos = [];   // copia local para rellenar los desplegables
+let usuarios = [];
+
+// ===========================================================================
+// 2. PRODUCTOS
+// ===========================================================================
+
+// GET /productos -> pinta la tabla
+async function cargarProductos() {
+  productos = await api("GET", "/productos");
+  const tbody = document.getElementById("tablaProductos");
+  if (productos.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="vacio">No hay productos todavía.</td></tr>`;
+  } else {
+    tbody.innerHTML = productos.map(p => {
+      let detalles = "";
+      if (p.tipo === "electronico") detalles = `Garantía: ${p.meses_garantia} meses`;
+      if (p.tipo === "ropa") detalles = `Talla ${esc(p.talla)}, ${esc(p.color)}`;
+      return `<tr><td title="${p.id}">${esc(p.nombre)}</td><td>${p.tipo}</td>
+        <td>${p.precio.toFixed(2)} €</td><td>${p.stock}</td><td>${detalles}</td>
+        <td><button class="peligro" onclick="eliminarProducto('${p.id}')">Eliminar</button></td></tr>`;
+    }).join("");
+  }
+  // Refresca los desplegables de producto del formulario de pedido
+  document.querySelectorAll(".selProducto").forEach(sel => rellenarProductos(sel));
+}
+
+// POST /productos -> crea un producto con los datos del formulario
+document.getElementById("formProducto").addEventListener("submit", async e => {
+  e.preventDefault();
+  const tipo = document.getElementById("pTipo").value;
+  const cuerpo = {
+    tipo,
+    nombre: document.getElementById("pNombre").value,
+    precio: parseFloat(document.getElementById("pPrecio").value),
+    stock: parseInt(document.getElementById("pStock").value),
+  };
+  if (tipo === "electronico") cuerpo.meses_garantia = parseInt(document.getElementById("pGarantia").value);
+  if (tipo === "ropa") {
+    cuerpo.talla = document.getElementById("pTalla").value;
+    cuerpo.color = document.getElementById("pColor").value;
+  }
+  try {
+    const creado = await api("POST", "/productos", cuerpo);
+    mensaje("msgProducto", `Producto "${creado.nombre}" creado.`, "ok");
+    e.target.reset(); mostrarCamposTipo();
+    await cargarProductos();
+  } catch (err) { mensaje("msgProducto", err.message, "error"); }
+});
+
+// DELETE /productos/{id}
+async function eliminarProducto(id) {
+  try {
+    await api("DELETE", `/productos/${id}`);
+    mensaje("msgProducto", `Producto eliminado.`, "ok");
+    await cargarProductos();
+  } catch (err) { mensaje("msgProducto", err.message, "error"); }
+}
+
+// Muestra los campos extra según el tipo de producto elegido
+function mostrarCamposTipo() {
+  const tipo = document.getElementById("pTipo").value;
+  document.getElementById("camposElectronico").hidden = tipo !== "electronico";
+  document.getElementById("camposRopa").hidden = tipo !== "ropa";
+}
+
+// ===========================================================================
+// 3. USUARIOS
+// ===========================================================================
+
+// GET /usuarios -> pinta la tabla y rellena los desplegables de clientes
+async function cargarUsuarios() {
+  usuarios = await api("GET", "/usuarios");
+  const tbody = document.getElementById("tablaUsuarios");
+  tbody.innerHTML = usuarios.length === 0
+    ? `<tr><td colspan="3" class="vacio">No hay usuarios todavía.</td></tr>`
+    : usuarios.map(u => `<tr><td title="${u.id}">${esc(u.nombre)}</td>
+        <td>${esc(u.email)}</td><td>${u.es_admin ? "Sí" : "No"}</td></tr>`).join("");
+
+  const opciones = usuarios.map(u => `<option value="${u.id}">${esc(u.nombre)} (${esc(u.email)})</option>`).join("");
+  document.getElementById("pedCliente").innerHTML = opciones;
+  document.getElementById("consultaCliente").innerHTML = opciones;
+}
+
+// POST /usuarios
+document.getElementById("formUsuario").addEventListener("submit", async e => {
+  e.preventDefault();
+  const cuerpo = {
+    nombre: document.getElementById("uNombre").value,
+    email: document.getElementById("uEmail").value,
+    tipo: document.getElementById("uTipo").value,
+    direccion: document.getElementById("uDireccion").value || null,
+  };
+  try {
+    const creado = await api("POST", "/usuarios", cuerpo);
+    mensaje("msgUsuario", `Usuario "${creado.nombre}" creado.`, "ok");
+    e.target.reset();
+    await cargarUsuarios();
+  } catch (err) { mensaje("msgUsuario", err.message, "error"); }
+});
+
+// ===========================================================================
+// 4. PEDIDOS
+// ===========================================================================
+
+function rellenarProductos(sel) {
+  const actual = sel.value;
+  sel.innerHTML = productos.map(p =>
+    `<option value="${p.id}">${esc(p.nombre)} (${p.precio.toFixed(2)} €, stock ${p.stock})</option>`).join("");
+  if (actual) sel.value = actual;
+}
+
+// Añade una línea (producto + cantidad) al formulario de pedido
+function anadirLinea() {
+  const div = document.createElement("div");
+  div.className = "fila";
+  div.innerHTML = `<div><label>Producto</label><select class="selProducto"></select></div>
+    <div style="flex:0 0 90px"><label>Cantidad</label><input class="cantidad" type="number" min="1" value="1"></div>`;
+  document.getElementById("lineasPedido").appendChild(div);
+  rellenarProductos(div.querySelector("select"));
+}
+
+// POST /pedidos
+document.getElementById("formPedido").addEventListener("submit", async e => {
+  e.preventDefault();
+  const items = [...document.querySelectorAll("#lineasPedido .fila")].map(fila => ({
+    producto_id: fila.querySelector(".selProducto").value,
+    cantidad: parseInt(fila.querySelector(".cantidad").value),
+  })).filter(i => i.producto_id);
+  const cuerpo = { cliente_id: document.getElementById("pedCliente").value, items };
+  try {
+    const pedido = await api("POST", "/pedidos", cuerpo);
+    mensaje("msgPedido", `Pedido creado. Total: ${pedido.total.toFixed(2)} €`, "ok");
+    document.getElementById("lineasPedido").innerHTML = ""; anadirLinea();
+    await cargarProductos();   // el stock ha cambiado
+  } catch (err) { mensaje("msgPedido", err.message, "error"); }
+});
+
+// GET /usuarios/{id}/pedidos
+async function verPedidos() {
+  const id = document.getElementById("consultaCliente").value;
+  const cont = document.getElementById("listaPedidos");
+  if (!id) return;
+  try {
+    const pedidos = await api("GET", `/usuarios/${id}/pedidos`);
+    cont.innerHTML = pedidos.length === 0
+      ? `<p class="vacio">Este usuario no tiene pedidos.</p>`
+      : pedidos.map(p => `<div class="pedido">
+          <strong>Pedido del ${new Date(p.fecha).toLocaleString("es-ES")} · ${p.total.toFixed(2)} €</strong>
+          ${p.items.map(i => `<div>${i.cantidad} × ${esc(i.nombre)} — ${i.subtotal.toFixed(2)} €</div>`).join("")}
+        </div>`).join("");
+  } catch (err) { cont.innerHTML = `<p class="mensaje error">${esc(err.message)}</p>`; }
+}
+
+// ===========================================================================
+// 5. ARRANQUE: comprueba la conexión y carga los datos
+// ===========================================================================
+async function conectar() {
+  const estado = document.getElementById("estado");
+  try {
+    await Promise.all([cargarProductos(), cargarUsuarios()]);
+    estado.textContent = "Conectado";
+    estado.style.color = "var(--ok)";
+  } catch (err) {
+    estado.textContent = "Sin conexión con la API";
+    estado.style.color = "var(--error)";
+  }
+}
+
+anadirLinea();
+conectar();
+</script>
+</body>
+</html>
