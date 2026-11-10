@@ -133,22 +133,24 @@ Endpoints disponibles:
 
 ### Publicar la imagen en un registry y descargarla (pull)
 
-Con GitHub Container Registry (hace falta un token de GitHub con permiso `write:packages`, que **no** se sube al repositorio):
+La imagen está publicada en Docker Hub: **[rodrigoframinan/tienda-online](https://hub.docker.com/r/rodrigoframinan/tienda-online)**.
+
+Cómo se publicó (flujo build → run → test → push):
 
 ```bash
-echo "$GITHUB_TOKEN" | docker login ghcr.io -u rodrigoframinan --password-stdin
-docker tag tienda-online:1.0 ghcr.io/rodrigoframinan/tienda-online:1.0
-docker push ghcr.io/rodrigoframinan/tienda-online:1.0
+docker login
+docker tag tienda-online:1.0 rodrigoframinan/tienda-online:1.0
+docker push rodrigoframinan/tienda-online:1.0
 ```
 
-Descargar y ejecutar la imagen publicada en cualquier equipo:
+Descargar y ejecutar la imagen publicada en cualquier equipo (no hace falta clonar el repositorio):
 
 ```bash
-docker pull ghcr.io/rodrigoframinan/tienda-online:1.0
-docker run --rm -p 8000:8000 ghcr.io/rodrigoframinan/tienda-online:1.0
+docker pull rodrigoframinan/tienda-online:1.0
+docker run --rm -p 8000:8000 rodrigoframinan/tienda-online:1.0
 ```
 
-(Con Docker Hub es igual cambiando `ghcr.io/rodrigoframinan` por `<usuario-dockerhub>` y haciendo `docker login`.)
+Las credenciales de Docker Hub las guarda `docker login` en el equipo y **no** se suben al repositorio.
 
 ### Extra: API + frontend con docker-compose
 
